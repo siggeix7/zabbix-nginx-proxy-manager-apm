@@ -1,0 +1,1014 @@
+# Zabbix 8.0 template. UUID mantenuti per aggiornamenti importabili.
+# Impostare {$NPM.CH.PASSWORD} in Zabbix come macro Secret text (valore escluso da Git).
+zabbix_export:
+  version: '8.0'
+  template_groups:
+  - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+    name: Templates/Applications
+  templates:
+  - uuid: 62ca08d2ca8e4bb084708a75927776dd
+    template: Zabbix APM Nginx Proxy Manager
+    name: Zabbix APM Nginx Proxy Manager
+    description: Monitoraggio APM di Nginx Proxy Manager su Zabbix 8.0 mediante OpenTelemetry Collector, Proxy OTLP/gRPC
+      e ClickHouse. Include due discovery Script LLD, contatori HTTP per stato, metriche per proxy host, percentuali
+      di errori, trigger e dashboard. Il campo resource host.name deve corrispondere al nome tecnico dell host Zabbix.
+      Configurare le macro {$NPM.CH.URL}, {$NPM.CH.DATABASE}, {$NPM.CH.USER} e {$NPM.CH.PASSWORD} (Secret text).
+      La seconda discovery mostra il dominio HTTP piu osservato per proxy host, che non e necessariamente il dominio
+      canonico configurato in NPM.
+    groups:
+    - name: Templates/Applications
+    discovery_rules:
+    - uuid: acd064c75c2c4b5886d16540c239eacf
+      name: 'Zabbix APM Nginx Proxy Manager: Host Discovery'
+      type: SCRIPT
+      key: apm.npm.host.discovery
+      delay: 1h
+      params: |
+        var params = JSON.parse(value);
+        var hostname = String(params.host || '').trim();
+
+        if (!hostname || hostname === '{HOST.HOST}') {
+            throw 'Impossibile risolvere il nome host Zabbix';
+        }
+
+        return JSON.stringify([
+            {
+                "{#ZBX.HOST}": hostname
+            }
+        ]);
+      item_prototypes:
+      - uuid: f954a374ef6f4fe3927f4b1b0054aef8
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 2xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.2xx["{#ZBX.HOST}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: MetricName
+              value: npm.http.responses.2xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 5020143ba2ce43b0bfa3e53fecd9dbaf
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 3xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.3xx["{#ZBX.HOST}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: MetricName
+              value: npm.http.responses.3xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 56bf44f1f097437c881ea1b2fc2c4706
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 4xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.4xx["{#ZBX.HOST}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: MetricName
+              value: npm.http.responses.4xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 8dddc0727bc54be29b4212dd8a03d51a
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 5xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.5xx["{#ZBX.HOST}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: MetricName
+              value: npm.http.responses.5xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 9a695a52c1e04b6987b29724d67e3bfd
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP requests per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.requests.total["{#ZBX.HOST}"]
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var data = JSON.parse(value);
+
+            if (!Array.isArray(data)) {
+                throw 'Risposta Telemetry query non valida';
+            }
+
+            var total = 0;
+
+            for (var i = 0; i < data.length; i++) {
+                total += Number(data[i].requests || 0);
+            }
+
+            return total;
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            conditions:
+            - column: MetricName
+              value: npm.http.requests
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: dd83145a119c476698241ca077fc1278
+        name: 'Zabbix APM Nginx Proxy Manager: Log access non riconosciuti per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.http.unparsed["{#ZBX.HOST}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: MetricName
+              value: npm.http.unparsed
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 362923555d44464390872d3c48dcbc80
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 4xx % (5m) - {#ZBX.HOST}'
+        type: CALCULATED
+        key: apm.npm.http.4xx.pct["{#ZBX.HOST}"]
+        delay: 1m
+        value_type: FLOAT
+        units: '%'
+        params: 100*sum(//apm.npm.http.4xx["{#ZBX.HOST}"],5m)/(sum(//apm.npm.http.requests.total["{#ZBX.HOST}"],5m)+0.001)
+        description: Percentuale status HTTP su 5 minuti; denominatore con epsilon anti divisione zero. E un KPI
+          di traffico, non una prova di disponibilita.
+        tags:
+        - tag: component
+          value: npm
+      - uuid: 75daf589ad5b4dcbb142090e3f8f34c5
+        name: 'Zabbix APM Nginx Proxy Manager: HTTP 5xx % (5m) - {#ZBX.HOST}'
+        type: CALCULATED
+        key: apm.npm.http.5xx.pct["{#ZBX.HOST}"]
+        delay: 1m
+        value_type: FLOAT
+        units: '%'
+        params: 100*sum(//apm.npm.http.5xx["{#ZBX.HOST}"],5m)/(sum(//apm.npm.http.requests.total["{#ZBX.HOST}"],5m)+0.001)
+        description: Percentuale status HTTP su 5 minuti; denominatore con epsilon anti divisione zero. E un KPI
+          di traffico, non una prova di disponibilita.
+        tags:
+        - tag: component
+          value: npm
+      parameters:
+      - name: host
+        value: '{HOST.HOST}'
+    - uuid: bc34ce4d69cc4715afd6d9dff4c9a720
+      name: 'Zabbix APM Nginx Proxy Manager: Proxy hosts discovery'
+      type: SCRIPT
+      key: apm.npm.proxyhosts.discovery
+      delay: 1h
+      params: |-
+        var p = JSON.parse(value);
+        if (!p.host || p.host === '{HOST.HOST}') {
+            throw 'Il nome tecnico host Zabbix non e stato risolto';
+        }
+        if (!p.url || !/^https?:\/\//.test(p.url)) {
+            throw 'Macro {$NPM.CH.URL} non valida';
+        }
+        if (!p.database || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(p.database)) {
+            throw 'Macro {$NPM.CH.DATABASE} non valida';
+        }
+        if (!p.user || !p.password || p.password.indexOf('{$') === 0) {
+            throw 'Configurare {$NPM.CH.USER} e {$NPM.CH.PASSWORD}';
+        }
+
+        // LLD: la chiave resta proxy-host-ID. Dominio: host HTTP prevalente
+        // osservato negli ultimi 7 giorni; non equivale al server_name canonico NPM.
+        var sql = [
+            "SELECT files.log_file AS log_file,",
+            "  extract(files.log_file, '^proxy-host-([0-9]+)_access[.]log$') AS proxy_id,",
+            "  if(length(dom.host_name) > 0, dom.host_name,",
+            "     concat('proxy-host-', extract(files.log_file, '^proxy-host-([0-9]+)_access[.]log$'))) AS proxy_domain",
+            "FROM (",
+            "  SELECT DISTINCT Attributes['log.file.name'] AS log_file",
+            "  FROM " + p.database + ".otel_metrics_sum",
+            "  WHERE MetricName = 'npm.http.requests'",
+            "    AND ServiceName = 'nginx-proxy-manager'",
+            "    AND ResourceAttributes['host.name'] = {zbxhost:String}",
+            "    AND TimeUnix >= now() - INTERVAL 7 DAY",
+            "    AND match(Attributes['log.file.name'], '^proxy-host-[0-9]+_access[.]log$')",
+            ") AS files",
+            "LEFT JOIN (",
+            "  SELECT log_file, argMax(host_name, hits) AS host_name",
+            "  FROM (",
+            "    SELECT Attributes['log.file.name'] AS log_file,",
+            "      lowerUTF8(Attributes['http_host']) AS host_name,",
+            "      sum(Value) AS hits",
+            "    FROM " + p.database + ".otel_metrics_sum",
+            "    WHERE MetricName = 'npm.http.host_requests'",
+            "      AND ServiceName = 'nginx-proxy-manager'",
+            "      AND ResourceAttributes['host.name'] = {zbxhost:String}",
+            "      AND TimeUnix >= now() - INTERVAL 7 DAY",
+            "      AND match(Attributes['http_host'], '^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$')",
+            "      AND length(Attributes['http_host']) >= 4",
+            "      AND position(Attributes['http_host'], '.') > 0",
+            "    GROUP BY log_file, host_name",
+            "  )",
+            "  GROUP BY log_file",
+            ") AS dom ON files.log_file = dom.log_file",
+            "ORDER BY log_file",
+            "FORMAT JSON"
+        ].join('\n');
+
+        var request = new HttpRequest();
+        request.addHeader('Content-Type: text/plain; charset=utf-8');
+        request.addHeader('X-ClickHouse-User: ' + p.user);
+        request.addHeader('X-ClickHouse-Key: ' + p.password);
+        var endpoint = p.url.replace(/\/+$/, '') +
+            '/?wait_end_of_query=1&param_zbxhost=' + encodeURIComponent(p.host);
+        var response = request.post(endpoint, sql);
+        var status = request.getStatus();
+        if (status !== 200) {
+            throw 'ClickHouse HTTP ' + status + ' durante discovery proxy NPM';
+        }
+        var payload = JSON.parse(response);
+        if (!Array.isArray(payload.data)) {
+            throw 'Risposta ClickHouse priva di data';
+        }
+        var output = [];
+        for (var i = 0; i < payload.data.length; i++) {
+            var row = payload.data[i];
+            if (!/^[0-9]+$/.test(String(row.proxy_id))) continue;
+            var domain = String(row.proxy_domain || '').trim();
+            if (domain.length > 150) domain = domain.substring(0, 150);
+            output.push({
+                '{#ZBX.HOST}': p.host,
+                '{#NPM.ID}': String(row.proxy_id),
+                '{#NPM.FILE}': String(row.log_file),
+                '{#NPM.DOMAIN}': domain || ('proxy-host-' + row.proxy_id)
+            });
+        }
+        return JSON.stringify(output);
+      lifetime_type: DELETE_NEVER
+      enabled_lifetime_type: DISABLE_AFTER
+      enabled_lifetime: 14d
+      description: Rileva proxy ID dalle metriche requests degli ultimi 7 giorni; dominio mostrato = HTTP Host prevalente
+        dal contatore npm.http.host_requests. Se mancante, fallback proxy-host-ID. Non interroga NPM API, quindi
+        nomi non sempre canonici e soggetti al traffico. Credenziali ClickHouse tramite macro segreta.
+      item_prototypes:
+      - uuid: b228d7b8e96843a78b62010562dae8e3
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 2xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.2xx["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.responses.2xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: dc792aa418924ccc88236dcd9ee55537
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 3xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.3xx["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.responses.3xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: 97b3f85f75db4d1996f82dc0c881002e
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 4xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.4xx["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.responses.4xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: 18ad39e2228b4121a7666f27a71fe727
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 5xx per minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.5xx["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.responses.5xx
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        trigger_prototypes:
+        - uuid: f96646f7267744eda6d5622dadde09e9
+          expression: last(/Zabbix APM Nginx Proxy Manager/apm.npm.proxy.http.5xx.pct["{#ZBX.HOST}","{#NPM.ID}"])>{$NPM.5XX.PCT.WARN}
+            and sum(/Zabbix APM Nginx Proxy Manager/apm.npm.proxy.http.requests["{#ZBX.HOST}","{#NPM.ID}"],5m)>={$NPM.5XX.MIN_REQUESTS}
+            and sum(/Zabbix APM Nginx Proxy Manager/apm.npm.proxy.http.5xx["{#ZBX.HOST}","{#NPM.ID}"],5m)>={$NPM.5XX.MIN_ERRORS}
+          name: 'NPM {#NPM.DOMAIN} [proxy-host {#NPM.ID}] su {#ZBX.HOST}: percentuale HTTP 5xx elevata'
+          priority: WARNING
+          description: Avviso 5xx solo quando il rapporto supera la soglia e il traffico / volume errori sono significativi.
+            Media temporale ultimi 5 minuti.
+          tags:
+          - tag: component
+            value: npm
+          - tag: npm.proxy_id
+            value: '{#NPM.ID}'
+          - tag: npm.domain
+            value: '{#NPM.DOMAIN}'
+        - uuid: d4005df61d164ddca4ee4b79fc7e1c1a
+          name: 'NPM {#NPM.DOMAIN} [proxy-host {#NPM.ID}] su {#ZBX.HOST}: volume HTTP 5xx critico'
+          expression: sum(/Zabbix APM Nginx Proxy Manager/apm.npm.proxy.http.5xx["{#ZBX.HOST}","{#NPM.ID}"],5m)>={$NPM.5XX.ABS.CRIT}
+          priority: HIGH
+          description: Rilevati molti HTTP 5xx in 5 minuti. Allarme di volume indipendente dalla percentuale.
+          tags:
+          - tag: component
+            value: npm
+          - tag: npm.proxy_id
+            value: '{#NPM.ID}'
+          - tag: npm.domain
+            value: '{#NPM.DOMAIN}'
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: ce90dd6ee69d40939ac7c897af56930f
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP requests per minute -
+          {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.requests["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.requests
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: c20111a820234fc4a28721d4a50c49de
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: Unparsed HTTP access logs per
+          minute - {#ZBX.HOST}'
+        type: TELEMETRY_QUERY
+        key: apm.npm.proxy.http.unparsed["{#ZBX.HOST}","{#NPM.ID}"]
+        description: Conteggio delle richieste NPM in intervalli di un minuto da metriche OTLP Delta. 0 indica assenza
+          di record nel bucket consultato, non verifica disponibilita del servizio.
+        preprocessing:
+        - type: JAVASCRIPT
+          parameters:
+          - |
+            var rows = JSON.parse(value);
+            if (!Array.isArray(rows)) {
+                throw 'Telemetry query: risposta non valida (atteso array JSON)';
+            }
+            var sum = 0;
+            for (var i = 0; i < rows.length; i++) {
+                var n = Number(rows[i].requests || 0);
+                if (!isFinite(n) || n < 0) {
+                    throw 'Telemetry query: aggregato non numerico';
+                }
+                sum += n;
+            }
+            return Math.round(sum);
+        time_shift: 30s
+        lookback_limit: 10m
+        granularity: 1m
+        query:
+          signal_type: METRICS
+          aggregated_columns:
+          - function: SUM
+            column: Value
+            alias: requests
+          filter:
+            evaltype: AND
+            conditions:
+            - column: Attributes
+              attribute_key: log.file.name
+              value: '{#NPM.FILE}'
+            - column: MetricName
+              value: npm.http.unparsed
+            - column: ResourceAttributes
+              attribute_key: host.name
+              value: '{#ZBX.HOST}'
+            - column: ServiceName
+              value: nginx-proxy-manager
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: d238688590f648009ef9ecf1382f389b
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 4xx % (5m) - {#ZBX.HOST}'
+        type: CALCULATED
+        key: apm.npm.proxy.http.4xx.pct["{#ZBX.HOST}","{#NPM.ID}"]
+        delay: 1m
+        value_type: FLOAT
+        units: '%'
+        params: 100*sum(//apm.npm.proxy.http.4xx["{#ZBX.HOST}","{#NPM.ID}"],5m)/(sum(//apm.npm.proxy.http.requests["{#ZBX.HOST}","{#NPM.ID}"],5m)+0.001)
+        description: Percentuale status HTTP su 5 minuti; denominatore con epsilon anti divisione zero. E un KPI
+          di traffico, non una prova di disponibilita.
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      - uuid: 7216a900060142809919acd38bebef10
+        name: 'Zabbix APM Nginx Proxy Manager: {#NPM.DOMAIN} [proxy-host {#NPM.ID}]: HTTP 5xx % (5m) - {#ZBX.HOST}'
+        type: CALCULATED
+        key: apm.npm.proxy.http.5xx.pct["{#ZBX.HOST}","{#NPM.ID}"]
+        delay: 1m
+        value_type: FLOAT
+        units: '%'
+        params: 100*sum(//apm.npm.proxy.http.5xx["{#ZBX.HOST}","{#NPM.ID}"],5m)/(sum(//apm.npm.proxy.http.requests["{#ZBX.HOST}","{#NPM.ID}"],5m)+0.001)
+        description: Percentuale status HTTP su 5 minuti; denominatore con epsilon anti divisione zero. E un KPI
+          di traffico, non una prova di disponibilita.
+        tags:
+        - tag: component
+          value: npm
+        - tag: npm.scope
+          value: proxy
+        - tag: npm.proxy_id
+          value: '{#NPM.ID}'
+        - tag: npm.domain
+          value: '{#NPM.DOMAIN}'
+      parameters:
+      - name: host
+        value: '{HOST.HOST}'
+      - name: password
+        value: '{$NPM.CH.PASSWORD}'
+      - name: url
+        value: '{$NPM.CH.URL}'
+      - name: user
+        value: '{$NPM.CH.USER}'
+      - name: database
+        value: '{$NPM.CH.DATABASE}'
+    macros:
+    - macro: '{$NPM.5XX.WARN}'
+      value: '10'
+      description: Soglia storica del vecchio template, conservata per compatibilita. La logica nuova utilizza {$NPM.5XX.PCT.WARN}
+        e minimi traffico/errori.
+    - macro: '{$NPM.CH.URL}'
+      value: http://clickhouse.example.invalid:8123
+      description: URL HTTP(S) di ClickHouse raggiungibile da Zabbix Server o Proxy. Da configurare prima della
+        discovery.
+    - macro: '{$NPM.CH.DATABASE}'
+      value: otel
+      description: Nome del database ClickHouse che contiene otel_metrics_sum. Deve corrispondere alla sorgente
+        APM.
+    - macro: '{$NPM.CH.USER}'
+      value: zbx_npm_discovery
+      description: Utente ClickHouse in sola lettura per la discovery dei proxy host.
+    - macro: '{$NPM.5XX.PCT.WARN}'
+      value: '10'
+      description: Percentuale errori 5xx negli ultimi cinque minuti, soglia warning.
+    - macro: '{$NPM.5XX.MIN_REQUESTS}'
+      value: '30'
+      description: Numero minimo di richieste nei 5m per applicare la soglia percentuale.
+    - macro: '{$NPM.5XX.MIN_ERRORS}'
+      value: '5'
+      description: Numero minimo di risposte 5xx nei 5m per attivare il warning percentuale.
+    - macro: '{$NPM.5XX.ABS.CRIT}'
+      value: '50'
+      description: Numero di 5xx in 5m che determina allarme ad alta gravita.
+    dashboards:
+    - uuid: 9fa9a4d2f7f64524a668c81bda3e1ce0
+      name: NPM APM - Overview
+      pages:
+      - name: Panoramica
+        widgets:
+        - type: problems
+          name: Problemi NPM
+          x: '0'
+          y: '0'
+          width: '72'
+          height: '4'
+        - type: topitems
+          name: Traffico e percentuali per proxy (ultimi valori)
+          x: '0'
+          y: '4'
+          width: '72'
+          height: '8'
+          fields:
+          - type: STRING
+            name: columns.0.items.0
+            value: '* [proxy-host *]: HTTP requests per minute *'
+          - type: STRING
+            name: columns.0.name
+            value: Requests/min
+          - type: INTEGER
+            name: columns.0.display_value_as
+            value: '1'
+          - type: STRING
+            name: columns.1.items.0
+            value: '* [proxy-host *]: HTTP 4xx per minute *'
+          - type: STRING
+            name: columns.1.name
+            value: HTTP 4xx
+          - type: INTEGER
+            name: columns.1.display_value_as
+            value: '1'
+          - type: STRING
+            name: columns.2.items.0
+            value: '* [proxy-host *]: HTTP 5xx per minute *'
+          - type: STRING
+            name: columns.2.name
+            value: HTTP 5xx
+          - type: INTEGER
+            name: columns.2.display_value_as
+            value: '1'
+          - type: STRING
+            name: columns.3.items.0
+            value: '* [proxy-host *]: HTTP 5xx % (5m) *'
+          - type: STRING
+            name: columns.3.name
+            value: 5xx % (5m)
+          - type: INTEGER
+            name: columns.3.display_value_as
+            value: '1'
+          - type: STRING
+            name: reference
+            value: TP004
+        - type: graphprototype
+          name: 'Serie: richieste per proxy'
+          x: '0'
+          y: '12'
+          width: '36'
+          height: '6'
+          fields:
+          - type: INTEGER
+            name: source_type
+            value: '3'
+          - type: ITEM_PROTOTYPE
+            name: itemid.0
+            value:
+              host: Zabbix APM Nginx Proxy Manager
+              key: apm.npm.proxy.http.requests["{#ZBX.HOST}","{#NPM.ID}"]
+          - type: INTEGER
+            name: columns
+            value: '2'
+          - type: INTEGER
+            name: rows
+            value: '2'
+          - type: STRING
+            name: reference
+            value: REQ01
+        - type: graphprototype
+          name: 'Serie: errori 5xx per proxy'
+          x: '36'
+          y: '12'
+          width: '36'
+          height: '6'
+          fields:
+          - type: INTEGER
+            name: source_type
+            value: '3'
+          - type: ITEM_PROTOTYPE
+            name: itemid.0
+            value:
+              host: Zabbix APM Nginx Proxy Manager
+              key: apm.npm.proxy.http.5xx["{#ZBX.HOST}","{#NPM.ID}"]
+          - type: INTEGER
+            name: columns
+            value: '2'
+          - type: INTEGER
+            name: rows
+            value: '2'
+          - type: STRING
+            name: reference
+            value: ERR01
+        - type: graphprototype
+          name: 'Serie: 5xx % su 5 minuti'
+          x: '0'
+          y: '18'
+          width: '36'
+          height: '6'
+          fields:
+          - type: INTEGER
+            name: source_type
+            value: '3'
+          - type: ITEM_PROTOTYPE
+            name: itemid.0
+            value:
+              host: Zabbix APM Nginx Proxy Manager
+              key: apm.npm.proxy.http.5xx.pct["{#ZBX.HOST}","{#NPM.ID}"]
+          - type: INTEGER
+            name: columns
+            value: '2'
+          - type: INTEGER
+            name: rows
+            value: '2'
+          - type: STRING
+            name: reference
+            value: PCT01
+        - type: graphprototype
+          name: 'Serie: errori 4xx per proxy'
+          x: '36'
+          y: '18'
+          width: '36'
+          height: '6'
+          fields:
+          - type: INTEGER
+            name: source_type
+            value: '3'
+          - type: ITEM_PROTOTYPE
+            name: itemid.0
+            value:
+              host: Zabbix APM Nginx Proxy Manager
+              key: apm.npm.proxy.http.4xx["{#ZBX.HOST}","{#NPM.ID}"]
+          - type: INTEGER
+            name: columns
+            value: '2'
+          - type: INTEGER
+            name: rows
+            value: '2'
+          - type: STRING
+            name: reference
+            value: ERR02

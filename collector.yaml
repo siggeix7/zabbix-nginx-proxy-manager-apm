@@ -1,0 +1,119 @@
+# OpenTelemetry Collector Contrib 0.165.0 - Nginx Proxy Manager / Zabbix 8 APM
+# host.name = nome tecnico host Zabbix, passato via ambiente.
+# ATTENZIONE: HTTP Host deriva dalla richiesta del client, NON da NPM API.
+# Proteggere i log: possono contenere IP/URL/query string sensibili.
+receivers:
+  file_log/npm_access:
+    include:
+      - /npm-logs/proxy-host-*_access.log
+    start_at: end
+    include_file_name: true
+    resource:
+      service.name: nginx-proxy-manager
+      deployment.environment.name: ${env:OTEL_ENVIRONMENT}
+      host.name: ${env:OTEL_HOST_NAME}
+    operators:
+      - type: regex_parser
+        id: npm_http_parser
+        parse_from: body
+        parse_to: attributes
+        on_error: send
+        # NPM: [timestamp] cache upstream response_status - METHOD scheme host "URI" ...
+        # Prendiamo il TERZO status, cioe la risposta al client.
+        regex: '^\[[^]]+\]\s+\S+\s+\S+\s+(?P<http_status>[1-5][0-9]{2})\s+-\s+(?P<http_method>[A-Z]+)\s+(?P<http_scheme>https?)\s+(?P<http_host>\S+)\s+"[^\"]*"'
+
+  file_log/npm_error:
+    include:
+      - /npm-logs/proxy-host-*_error.log
+    start_at: end
+    include_file_name: true
+    resource:
+      service.name: nginx-proxy-manager
+      deployment.environment.name: ${env:OTEL_ENVIRONMENT}
+      host.name: ${env:OTEL_HOST_NAME}
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 200
+
+connectors:
+  count:
+    logs:
+      npm.http.requests:
+        description: Total HTTP access records
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      npm.http.responses.2xx:
+        description: Client-facing status 2xx
+        conditions:
+          - 'log.attributes["http_status"] != nil and IsMatch(log.attributes["http_status"], "^2[0-9]{2}$")'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      npm.http.responses.3xx:
+        description: Client-facing status 3xx
+        conditions:
+          - 'log.attributes["http_status"] != nil and IsMatch(log.attributes["http_status"], "^3[0-9]{2}$")'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      npm.http.responses.4xx:
+        description: Client-facing status 4xx
+        conditions:
+          - 'log.attributes["http_status"] != nil and IsMatch(log.attributes["http_status"], "^4[0-9]{2}$")'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      npm.http.responses.5xx:
+        description: Client-facing status 5xx
+        conditions:
+          - 'log.attributes["http_status"] != nil and IsMatch(log.attributes["http_status"], "^5[0-9]{2}$")'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      npm.http.unparsed:
+        description: Access records not recognized by parser
+        conditions:
+          - 'log.attributes["http_status"] == nil'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+      # Metrica di sola discovery: separa file NPM e nome Host osservato.
+      # ATTENZIONE alla cardinalita: Host e controllabile dal client.
+      # Disabilitare la metrica se le richieste contengono Host arbitrari (internet pubblico).
+      npm.http.host_requests:
+        description: Request volume per NPM log file and observed HTTP Host
+        conditions:
+          - 'log.attributes["http_host"] != nil and IsMatch(log.attributes["http_host"], "^[A-Za-z0-9][A-Za-z0-9.-]{3,252}$")'
+        attributes:
+          - key: log.file.name
+            default_value: unknown
+          - key: http_host
+            default_value: unknown
+
+exporters:
+  otlp_grpc/zabbix:
+    endpoint: ${env:ZABBIX_OTLP_ENDPOINT}
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+    retry_on_failure:
+      enabled: true
+
+service:
+  pipelines:
+    logs/access:
+      receivers: [file_log/npm_access]
+      processors: [batch]
+      exporters: [otlp_grpc/zabbix, count]
+    logs/error:
+      receivers: [file_log/npm_error]
+      processors: [batch]
+      exporters: [otlp_grpc/zabbix]
+    metrics/npm:
+      receivers: [count]
+      processors: [batch]
+      exporters: [otlp_grpc/zabbix]

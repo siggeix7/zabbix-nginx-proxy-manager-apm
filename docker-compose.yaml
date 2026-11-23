@@ -1,0 +1,16 @@
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    container_name: npm-otel-collector
+    user: "${OTEL_COLLECTOR_UID:-10001}:${OTEL_COLLECTOR_GID:-10001}"
+    restart: unless-stopped
+    command:
+      - --config=/etc/otelcol/config.yaml
+    environment:
+      # Il file .env da solo NON passa le variabili al container.
+      ZABBIX_OTLP_ENDPOINT: ${ZABBIX_OTLP_ENDPOINT:?Set ZABBIX_OTLP_ENDPOINT in .env}
+      OTEL_HOST_NAME: ${OTEL_HOST_NAME:?Set OTEL_HOST_NAME in .env}
+      OTEL_ENVIRONMENT: ${OTEL_ENVIRONMENT:-production}
+    volumes:
+      - ./collector.yaml:/etc/otelcol/config.yaml:ro
+      - ${NPM_LOG_DIR:?Set NPM_LOG_DIR in .env}:/npm-logs:ro

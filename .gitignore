@@ -1,0 +1,20 @@
+# Local secrets & overrides
+.env
+.env.*
+!.env.example
+*.local.yaml
+*.secret.yaml
+
+# Logs / temporary files
+*.log
+*.log.*
+*.bak
+*.swp
+.DS_Store
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# IDEs
+.idea/
+.vscode/
